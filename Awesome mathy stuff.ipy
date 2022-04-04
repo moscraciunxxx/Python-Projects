@@ -1,0 +1,522 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Mar 29 01:33:16 2022
+
+@author: moscr
+"""
+
+import numpy as np
+import matplotlib.pyplot as plt 
+import math 
+
+def nChooseK(n,k):
+    num=math.factorial(n)
+    den=math.factorial(k)*math.factorial(n-k)
+    return num/den
+
+
+pSize=10
+PT=np.zeros((pSize,pSize),dtype=int)
+
+for n in range(pSize):
+    for k in range(n+1):
+        PT[n,k]=nChooseK(n,k)
+
+plt.imshow(PT)
+plt.show()
+#%% to print the Pascal's triangle as is normally known
+for i in range(pSize):
+    tmp=PT[i,:]
+    tmp=tmp[tmp!=0]
+    print(" "*(pSize-i)+np.array2string(tmp)[1:-1])
+       
+    
+#%% Another way to print the Pascal's triangle 
+from scipy.special import comb
+ 
+N = 15
+strlist = []
+for i in range(N):
+    str1 = ''
+    for j in range(i+1):
+        pnum = comb(i,j, exact=True)
+        str1 += f'{pnum:^7d}'
+    strlist.append(str1)
+ 
+maxchars = len(strlist[-1])
+for i in range(N):
+    padchars = int((maxchars - len(strlist[i]))/2)
+    print(' '*padchars + strlist[i] + '\n')
+    
+    
+
+#%% Euler's identity 
+
+m=4.3
+p=np.pi/4
+euler=m*np.exp(1j*p)
+
+# rectangular notation 
+rect=m*(np.cos(p)+1j*np.sin(p))
+
+print(euler)
+print(rect)
+    
+
+theta=np.angle(euler)
+radius=np.abs(euler)
+
+x=np.real(euler)
+y=np.imag(euler)
+
+plt.polar(p,m,'b+')
+plt.polar(theta,radius,'b+')
+
+plt.plot(x,y,'ro')
+plt.show()
+    
+#%% we need to change the cartezian axes limits without changing the polar limits 
+
+fig=plt.figure() 
+ax_cart=fig.add_axes([.1,.1,.8,.8])
+ax_polar=fig.add_axes([.1,.1,.8,.8], polar=True,frameon=False)
+# draw the two plots 
+
+ax_polar.plot(theta,radius,'b+',markersize=20)
+ax_cart.plot(x,y,'ro',markersize=20)
+
+r=ax_polar.get_rmax()
+
+
+ax_cart.set_xlim([-r,r])
+ax_cart.set_ylim([-r,r])
+ax_cart.set_aspect(1/ax_cart.get_data_ratio())
+
+
+#%% Parameterized Gaussian 
+
+import numpy as np
+import matplotlib.pyplot as plt 
+
+x=np.linspace(-10,10,1001)
+
+def makeGauss(amp,sigma,tau=0):
+     g=amp/(sigma*np.sqrt(2*np.pi))*np.exp(-(x-tau)**2/(2*sigma**2))  
+     return g
+
+plt.plot(x,makeGauss(1,1,1))
+
+plt.plot(x,makeGauss(3,3,5))
+plt.plot(x,makeGauss(6,5,1))
+plt.plot(x,makeGauss(1.5,3.1,1))
+plt.plot(x,makeGauss(5.5,2,-1))
+
+
+#%%vary some parameters and fix some other 
+
+amps=np.linspace(.1,5,75)
+G=np.zeros((len(amps),len(x)))
+
+
+for i in range(len(amps)):
+    G[i,:]=makeGauss(amps[i],2.24559)
+    
+# plt.plot(x,G.T);
+plt.imshow(G,aspect='auto',extent=[x[0],x[-1],amps[-1],amps[0]])
+plt.xlabel("Time (a.u.)")
+plt.ylabel("Amplitude (a.u.)")
+plt.title('Varying a parameter')
+
+####################################################################
+
+taus=np.linspace(-5,7,75)
+G=np.zeros((len(taus),len(x)))
+
+
+for i in range(len(taus)):
+    G[i,:]=makeGauss(1,5.5589,taus[i])
+    
+# plt.plot(x,G.T);
+plt.imshow(G,aspect='auto',extent=[x[0],x[-1],taus[-1],taus[0]])
+plt.xlabel("Time (a.u.)")
+plt.ylabel("Tau (a.u.)")
+plt.title('Varying $\\tau$ parameter')
+
+plt.plot(x,G.T)   ;
+    
+    
+########################################################################
+
+
+sigmas=np.linspace(.1,5,75)
+G=np.zeros((len(sigmas),len(x)))
+
+
+for i in range(len(sigmas)):
+    G[i,:]=makeGauss(.8,sigmas[i],2.24559)
+    
+# plt.plot(x,G.T);
+plt.imshow(G,aspect='auto',extent=[x[0],x[-1],sigmas[-1],sigmas[0]],vmax=.15)
+plt.xlabel("Time (a.u.)")
+plt.ylabel("Sigma (a.u.)")
+plt.title('Varying $\\sigma$ parameter')   
+    
+    
+#%% Time dilation in special relativity 
+c=299792458
+timedilation=lambda v: 1/np.sqrt(1-(v**2/c**2))
+
+kph=np.zeros(6)
+
+kph[0]=100  # car on highway
+kph[1]=200 # car on German autobahn 
+kph[2]=900 # airplane
+kph[3]=11300 # satellite 
+kph[4]=107991 # Earth around the sun 
+kph[5]=828000 # solar system around galaxy 
+
+labels=["car","autobahn","plane","satellite","Earth","Solar system"]
+
+td=np.zeros(len(kph))
+
+for i in range(len(kph)):
+    v=kph[i]*1000/3600
+    td[i]=timedilation(v)
+    
+print(td) 
+
+plt.bar(range(len(td)),td)
+plt.ylim([.9999999,1.000004])
+plt.xticks(ticks=range(len(td)),labels=labels,rotation=45)
+
+    
+    
+#%% Eigenvalues on a complex circle 
+fig, ax=plt.subplots(1,2,figsize=(12,5))
+n=20
+mags=[]
+for i in range(150):
+    # create the random numbers matrix 
+    A=np.random.randn(n,n)/np.sqrt(n)
+    L=np.linalg.eig(A)[0]   # the first output which is the eigenvalues 
+    mags=np.concatenate((mags,np.abs(L)))
+    ax[0].plot(np.real(L),np.imag(L),'o')
+    
+mags.sort()    
+ax[1].plot(mags[::-1],'o')  # the trick to reverse the vector 
+    
+plt.show()
+
+
+#%% I heart math 
+
+t=np.linspace(0,np.pi*2,250)
+x=16*np.sin(t)**3
+y=13*np.cos(t)-5*np.cos(2*t)-2*np.cos(3*t)-np.cos(4*t)
+
+plt.plot(x,y,'r')
+plt.axis('square')
+plt.axis('off')
+plt.show()
+    
+###############################################################################
+# import numpy as np
+# import matplotlib.pyplot as plt
+# from matplotlib import colors
+# # 92 Bonus   I heart math
+# t = np.linspace(0,np.pi*2,200)
+# x = 16*np.sin(t)**3
+# y = 13*np.cos(t) - 5*np.cos(2*t) - 2*np.cos(3*t) - np.cos(4*t)
+ 
+ 
+# fig, ax = plt.subplots()
+# for i in range(1,30):
+#   plt.plot((x)/(1+i/7),(y)/(1+i/7))
+ 
+# ax.add_patch(plt.Rectangle((-30,0),60,20, color="blue"))
+# ax.add_patch(plt.Rectangle((-30,0),60,-20, color="yellow"))
+# plt.axis("off")
+# plt.show()
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

@@ -1,0 +1,210 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Mar 23 05:26:07 2022
+
+@author: moscr
+"""
+
+import numpy as np
+import pandas as pd 
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+url= "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv"
+
+data_wine=pd.read_csv(url,sep=';')
+data_wine.describe()
+
+# print a list of unique values per feature
+
+len(np.unique(data_wine['pH']))
+
+for i in data_wine.keys():
+    print(f"Column {i} has  {len(np.unique(data_wine[i]))}  unique values.")
+
+fig, ax=plt.subplots(1,figsize=(19,5))
+ax=sns.boxplot(data=data_wine)
+ax.set_xticklabels(ax.get_xticklabels(),rotation =45 )
+plt.show()
+
+
+clean_data_wine=data_wine[data_wine['total sulfur dioxide']<200]
+
+# visual data exploration
+
+sns.scatterplot(x=clean_data_wine['residual sugar'],y=clean_data_wine['alcohol'])
+
+
+# the covariance 
+sns.pairplot(clean_data_wine[['alcohol','pH','quality']],kind='reg',hue='quality')
+plt.show()
+
+cols2plot=['fixed acidity','citric acid','alcohol','pH','quality']
+sns.pairplot(clean_data_wine[cols2plot],kind='reg',hue='quality')
+plt.show()
+
+#%% T-test for acidity on wine quality 
+
+import scipy.stats as stats
+
+# extract the data
+
+x=clean_data_wine['volatile acidity'][clean_data_wine['quality']==3]
+
+y=clean_data_wine['volatile acidity'][clean_data_wine['quality']==8]
+
+plt.plot(np.random.randn(len(x))/30,x,'o',
+         np.random.randn(len(y))/30+1,y,'o')
+
+plt.xlim([-1,2])
+plt.xticks([0,1],labels=['Qual 3','Qual 8'])
+plt.ylabel('volatile acidity ')
+plt.show()
+
+#%% ttest  test if the mean of the x data points is different from the mean of the y data points 
+ttest=stats.ttest_ind(x,y)
+plt.plot(np.random.randn(len(x))/30,x,'o',
+         np.random.randn(len(y))/30+1,y,'o')
+plt.xlim([-1,2])
+plt.xticks([0,1],labels=['Qual 3','Qual 8'])
+plt.ylabel('volatile acidity ')
+plt.title(f't={ttest[0]:.2f}, p={ttest[1]:.5f}')
+plt.show()
+
+n_unique_values=6
+n=0
+
+qualcounts=np.zeros(n_unique_values)
+for i in range(3,9):
+    qualcounts[n]=len(clean_data_wine[clean_data_wine['quality']==i])
+    n+=1
+
+plt.bar(range(3,9),qualcounts)
+plt.xlabel('Quality rating')
+plt.ylabel('Counts')
+plt.show()
+
+
+counts=clean_data_wine['quality'].value_counts()
+plt.bar(list(counts.keys()),counts)
+
+#%% add more data 
+
+
+x=clean_data_wine['volatile acidity'][(clean_data_wine['quality']==3) | (clean_data_wine['quality']==4)]
+y=clean_data_wine['volatile acidity'][(clean_data_wine['quality']==7) | (clean_data_wine['quality']==8)]
+
+
+ttest=stats.ttest_ind(x,y)
+plt.plot(np.random.randn(len(x))/30,x,'o',
+         np.random.randn(len(y))/30+1,y,'o',markeredgecolor='k')
+plt.xlim([-1,2])
+plt.xticks([0,1],labels=['Qual 3','Qual 8'])
+plt.ylabel('volatile acidity ')
+plt.title(f't={ttest[0]:.2f}, p={ttest[1]:.5f}')
+plt.show()
+
+#%%  Multiple regression is used to predict the variability in one variable using a lot of other variables 
+# if the p-values is smaller than 0.05 we consider that feature to be significantly predictive of our investigated feature 
+
+import statsmodels.api as sm
+
+dep_var=clean_data_wine['quality']
+ind_vars=clean_data_wine.drop(labels='quality',axis=1)
+
+
+ind_vars=sm.add_constant((ind_vars))
+model=sm.OLS(dep_var,ind_vars).fit()
+
+print(model.summary())
+
+
+sig_cols=list(model.pvalues[model.pvalues<0.05].keys())
+# list comprehension
+
+[print(i) for i in sig_cols];
+
+
+sig_cols.append('quality')
+sns.pairplot(clean_data_wine[sig_cols],kind='reg',hue='quality') 
+
+#%%  Logistic regression  predicts only two values
+# with MR the dependant variable has multiple different values 
+
+# create a threshold to binarize the data 
+
+binthresh=np.mean(clean_data_wine['quality'])
+clean_data_wine['binquality']=clean_data_wine['quality']>binthresh
+clean_data_wine
+
+# create another dataframe that contains but the last two columns  without the .drop() method 
+Xcols=[]
+for key in clean_data_wine.keys():
+    if key not in ['quality','binquality']:         
+        #print(key)
+        Xcols.append(key)
+
+
+model1=sm.Logit(clean_data_wine['binquality'],clean_data_wine[Xcols])
+results=model1.fit(method='newton')
+results.summary()
+
+
+sig_colsL=list(results.pvalues[results.pvalues<0.05].keys())
+print("Significant predictors from the logistic regression: ")
+[print(" "+i) for i in sig_colsL];
+
+print(" ")
+
+print("Significant predictors from the standart regression: ")
+[print(" "+i) for i in sig_cols[:-1] ]; # we need to remove the quality variable
+
+
+#%% Generate a distribution of numbers that are non-gaussian and transform it into a gaussian 
+
+n=600
+z=np.cumsum(np.random.randn(n))
+w=stats.rankdata(z)/(n+1)
+print(np.min(w), np.max(w))
+h=w*2-1
+print(np.min(h),np.max(h))
+
+distribution=np.arctanh(h)
+
+fig,ax=plt.subplots(2,2,figsize=(12,8))
+ax[0,0].plot(z)
+ax[0,0].set_title('Original data')
+ax[0,1].plot(w)
+ax[0,1].set_title('Transformed data')
+ax[1,0].hist(z,bins=40)
+ax[1,0].set_title('Original data')
+ax[1,1].hist(distribution,bins=40)
+ax[1,1].set_title('Transformed data')
+
+plt.show()
+
+
+plt.plot(z,distribution,'s')
+plt.xlabel('Original')
+plt.ylabel('Transformed')
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

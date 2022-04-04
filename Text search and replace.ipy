@@ -1,0 +1,177 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Mar 10 01:55:08 2022
+
+@author: moscr
+"""
+
+# import zipfile
+
+# %cd D:\Readings\Python\Spyder\MikeCohen\MasterPython_CodeAndData  change the directory 
+
+# with zipfile.ZipFile("D:\Readings\Python\Spyder\MikeCohen\MasterPython_CodeAndData.zip", 'r') as zip_ref:
+#     zip_ref.extractall("D:\Readings\Python\Spyder\MikeCohen")   extract the data from a zip file
+import webvtt
+
+
+%cd D:\Readings\Python\Spyder\MikeCohen\MasterPython_CodeAndData\textSearchReplace
+
+fil=webvtt.read("captions_text.vtt")
+txt=fil.content
+print(txt)
+
+import re
+
+pattern2replace=r'\n\n\d{1,3}\n\d\d:\d\d:\d\d.\d\d\d --> \d\d:\d\d:\d\d.\d\d\d\n'
+
+regex_timestamps=re.compile(pattern2replace)
+regex_timestamps.findall(txt)
+
+newtext=regex_timestamps.sub(' ',txt)
+newtext=newtext[7:]
+
+words=newtext.split()
+
+print(type(words))
+len(words)
+
+# Replace 4-letter words and save to disk
+for wordi in range(len(words)):
+    #print(len(words[wordi]))
+    if len(words[wordi])==4 and not words[wordi][-1]=='.':
+       # print(words[wordi])
+       words[wordi]=words[wordi][0]+'***'
+    
+words
+
+# ' '.join(words)
+cleantxt=' '.join(words)
+
+
+with open('clean_transcript.txt','w') as f:
+    f.write(cleantxt)
+fil.save('clean_transcript.txt')
+    
+#%% Bonus Readability of scrambled words 
+
+import numpy as np
+text="I have often wondered whether it's possible to read an entire book faster if the useless letters were removed."
+
+words=text.split()
+print(words)
+# completely scramble all the letters 
+# np.random.permutation(5)
+for wi in range(len(words)):
+    thisword=words[wi]
+    idx=np.random.permutation(len(thisword))
+    words[wi]=''.join([thisword[i] for i in idx])
+    
+' '.join(words)
+
+
+#%%  completely scramble all the letters except for the first and the last 
+
+
+words=text.split()
+
+
+for wi in range(len(words)):
+    # ignore short words
+    
+    if len(words[wi])<4:
+        continue
+    thisword=words[wi][1:-1]
+    idx=np.random.permutation(len(thisword))
+    words[wi]=words[wi][0]+''.join([thisword[i] for i in idx])+ words[wi][-1]
+    
+' '.join(words)
+
+#%% replace with random letters 
+
+import string
+all_letters=string.ascii_lowercase
+
+words=text.split()
+
+
+for wi in range(len(words)):
+    # ignore short words
+    
+    if len(words[wi])<4:
+        continue
+    thisword=words[wi][1:-1]
+    idx=np.random.randint(0,len(all_letters),len(thisword))
+    words[wi]=words[wi][0]+''.join([all_letters[i] for i in idx])+ words[wi][-1]
+    
+' '.join(words)
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

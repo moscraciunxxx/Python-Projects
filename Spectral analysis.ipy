@@ -1,0 +1,277 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Mar 24 04:43:02 2022
+
+@author: moscr
+"""
+# Simulate an AR process (auto regression)  
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.signal import welch, spectrogram
+
+N=300
+alpha=np.array([-.6,.9])
+k=len(alpha)
+x=np.zeros(N)
+
+for i in range(k,N):
+    #x[i]=alpha[0]*x[i-1]+alpha[1]*x[i-2]+np.random.randn()
+    x[i]=sum(alpha*x[i-k:i])+np.random.randn()
+    
+    
+x+=np.sin(np.linspace(0,10*np.pi,N))
+
+plt.plot(x)
+plt.xlabel('X axis')
+plt.title('AR (%s) process ' %k)
+plt.show()
+    
+#%% Code the Fourier transform 
+t=np.arange(N)/N
+# initialize Fourier coefficients 
+fc=np.zeros(N,dtype=complex)
+
+
+# manual Fourier transform 
+for f in range(N): 
+    # create the complex sine wave
+    
+    csw=np.exp(-1j*2*np.pi*f*t)
+    
+    
+    # dot product with the signal
+    
+    fc[f]=np.dot(csw,x)
+#%% FFT function
+
+hz=np.linspace(0,1,int(N/2+1))
+
+
+
+fc2=np.fft.fft(x)
+
+plt.plot(hz,np.abs(fc[:len(hz)]),label="Our Fourier transform")
+
+plt.plot(hz,np.abs(fc2[:len(hz)]),'ro',label="FFT")
+plt.legend()
+plt.xlabel("Frequency (fraction of Nyquist ")
+plt.ylabel('Amplitude (a.u.)')
+plt.show()
+
+#%% Zero-padding the FFT 
+# is smooths the signal representation in the frequency domain  ( the power spectrum looks similar but smooth out)
+
+
+
+N=31
+alpha=np.array([-.6,.9])
+k=len(alpha)
+x=np.zeros(N)
+
+for i in range(k,N):
+    #x[i]=alpha[0]*x[i-1]+alpha[1]*x[i-2]+np.random.randn()
+    x[i]=sum(alpha*x[i-k:i])+np.random.randn()
+
+
+for i in range(4):
+    # include the number of FFT points (including zero padding)
+    nfft=N+10**i *int(i!=0) 
+    
+    # compute the FFT 
+    xX=np.fft.fft(x,n=nfft)
+    
+    # compute the hz vector 
+    hz=np.linspace(0,1,int(nfft/2+1))
+    
+    # plot the amplitude vector 
+    plt.plot(hz,np.abs(xX[:len(hz)]),'-.',label='%s-point Fourier '%nfft)
+plt.legend()
+plt.show()
+
+#%% Welch's method 
+
+N=3000
+t=np.linspace(0,4*np.pi,N)
+
+signal1=np.concatenate((np.sin(t), np.sin(t)))
+signal2=np.concatenate((np.sin(t), -np.sin(t)))
+
+plt.plot(signal1)
+plt.plot(signal2)
+plt.show()
+
+#%% static FFt 
+
+static1=np.fft.fft(signal1)
+static2=np.fft.fft(signal2)
+staticHz=np.linspace(0, 1,int(len(signal1)/2+1))
+
+# Welch's method 
+dynamicHz,dynamicX1=welch(signal1,nfft=N)
+dynamicHz,dynamicX2=welch(signal2,nfft=N)
+
+
+
+
+
+fig,ax=plt.subplots(1,2,figsize=(15,7))
+ax[0].plot(staticHz,np.abs(static1[:len(staticHz)]),'-o',label="Signal 1")
+ax[0].plot(staticHz,np.abs(static2[:len(staticHz)]),'-o',label="Signal 2")
+ax[0].set_xlim([ 0,.01])
+ax[0].set_title("Static spectrum via FFT ")
+
+
+ax[1].plot(dynamicHz,np.abs(dynamicX1[:len(dynamicHz)]),'-o',label="Signal 1")
+ax[1].plot(dynamicHz,np.abs(dynamicX2[:len(dynamicHz)]),'-o',label="Signal 2")
+ax[1].set_xlim([ 0,.01])
+ax[1].set_title("Dynamic spectrum via FFT ")
+
+
+plt.show()
+
+#%% 
+o=welch(signal1,nfft=N)
+o[0]
+
+
+
+#%% Bonus video, spectrogram 
+
+
+f,t,Sxx=spectrogram(signal2,noverlap=600,nperseg=1000)
+
+plt.pcolormesh(t,f,Sxx,shading="gouraud")
+plt.ylim([0,0.005])
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 

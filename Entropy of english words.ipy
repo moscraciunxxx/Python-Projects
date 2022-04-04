@@ -1,0 +1,205 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Mar 14 23:12:34 2022
+
+@author: moscr
+"""
+import requests
+book=requests.get('https://www.guttenberg.org/files/35/35-0.txt')
+
+text=book.text
+
+
+#%% 
+url = 'http://www.gutenberg.org/files/35/35-0.txt'
+ 
+import requests
+import re
+import numpy as np
+import matplotlib.pyplot as plt  
+ 
+response = requests.get(url)
+response.encoding = response.apparent_encoding
+text = response.text 
+
+print(type(text))
+print(len(text))
+
+strings2replace=[
+                 '\r\n\r\nâ\x80\x9c',  # new paragraph
+                 'â\x80\x9c',       # open quote 
+                 'â\x80\x9d',       # close quote
+                 '\r\n',            #new line 
+                 'â\x80\x94',       # hyphen
+                 'â\x80\x99',       # single apostrophe 
+                 'â\x80\x98',       # single quote
+                 '_',               # underscore, used for stresing
+                 
+                 
+                 ]
+
+
+for str2match in strings2replace:
+    regexp=re.compile(r'%s' %str2match)
+    text=regexp.sub(" ",text)
+
+
+words=text.split()
+print(len(words))
+
+words[:50]    
+    
+    
+wordlengths=np.zeros(len(words))
+for wordi in range(len(words)):
+    wordlengths[wordi]=len(words[wordi])
+    
+plt.plot(wordlengths,'o')
+plt.show()
+    
+    
+plt.hist(wordlengths,bins=30)
+plt.xlabel('Word lengths')
+plt.ylabel('Word count')
+plt.show()
+    
+    
+    
+wordcounts=np.zeros(40)
+for wrd in words:
+    wordcounts[len(wrd)]+=1
+    
+plt.bar(range(len(wordcounts)),wordcounts )
+plt.show()
+#%% Letters frequency     
+import string 
+letters=string.ascii_lowercase
+numletters=len(letters)
+letterscount=np.zeros(numletters)
+n=0
+for i in letters:
+    
+    letterscount[n]=text.lower().count(i)
+    n+=1
+    
+letterscount
+
+
+fig,ax=plt.subplots(1,figsize=(15,4))
+plt.bar(range(numletters),letterscount)
+ax.set_xticks(range(numletters))
+ax.set_xticklabels(letters)
+ax.set_xlabel('Letter')
+ax.set_ylabel('Count ')
+plt.show()
+
+
+
+#%% Letter entropy 
+
+letterprob=letterscount/sum(letterscount)
+print(sum(letterprob))
+    
+    
+    
+fig,ax=plt.subplots(1,figsize=(15,4))
+plt.bar(range(numletters),letterprob)
+ax.set_xticks(range(numletters))
+ax.set_xticklabels(letters)
+ax.set_xlabel('Letter')
+ax.set_ylabel('Probability  ')
+plt.show()
+fig;
+    
+entropy_letters=-sum(letterprob*np.log2(letterprob))
+entropy_letters
+ax.set_title('Entropy = %.4f' %entropy_letters)
+fig
+
+np.log2(0+np.finfo(float).eps)
+
+#%% Conditional (sequence) entropy 
+
+
+probmat=np.zeros((numletters,numletters))
+
+for i in range(len(text)-1):
+    currletter=text[i]
+    nextletter=text[i+1]
+    
+    if currletter in letters and nextletter in letters:
+        probmat[letters.index(currletter),letters.index(nextletter)]+=1
+    
+
+ 
+    
+fig,ax=plt.subplots(1,figsize=(6,6))
+ax.imshow(probmat,vmax=400)
+ax.set_yticks(range(numletters))
+ax.set_xticks(range(numletters))
+ax.set_xticklabels(letters)
+ax.set_yticklabels(letters)
+ax.set_xlabel('Next letter ')
+ax.set_ylabel('Current letter ')
+plt.show()
+    
+    
+conditionalEntrop=np.zeros(numletters)
+
+for i in range(numletters):
+    probs=probmat[i,:]
+    probs=probs/sum(probs)
+    
+    conditionalEntrop[i]=-sum(probs*np.log2(probs+np.finfo(float).eps))
+    
+
+    
+fig,ax=plt.subplots(1,figsize=(8,4))
+ax.bar(range(numletters ),conditionalEntrop)
+ax.set_xticks(range(numletters))
+ax.set_xticklabels(letters)
+plt.show()
+
+    
+#%% WordCloud
+# !pip install wordcloud
+from wordcloud import WordCloud
+wordcloud=WordCloud().generate(text)
+type(wordcloud) 
+  
+plt.imshow(wordcloud)
+plt.axis('Off')  
+plt.show()  
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

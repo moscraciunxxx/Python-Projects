@@ -1,0 +1,398 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Mar 30 06:52:55 2022
+
+@author: moscr
+"""
+
+# Smoothing via running-mean filter 
+import numpy as np
+import matplotlib.pyplot as plt 
+from scipy.signal import detrend 
+
+N=10001
+time=np.linspace(0,4*np.pi,N)
+signal=np.zeros(N)
+
+for j in range(1,4):
+    signal+=np.cos(j*time)**j
+    
+    
+noisysignal=signal+np.random.randn(N)
+    
+    
+plt.plot(time,noisysignal,time,signal )
+
+#%% Runnig-mean filter 
+
+filtsignal=noisysignal.copy()
+k=20
+
+for i in range(N):
+    lowerbound=np.max((0,i-k))  # if i-k is negative we go with 0, wheareas i-k is positive we stay with i-k
+    upperbound=np.min((N,i+k))  # we need them to be a tuple 
+    filtsignal[i]=np.mean(noisysignal[lowerbound:upperbound])
+    
+    
+plt.plot(time,filtsignal,time,signal)
+plt.show()
+
+plt.plot(time,noisysignal,time,filtsignal)
+
+
+#%% Try the smoothing algorithm for different values of k (different widths for the mean smoothing filter)
+
+def meansmooth(signalIn,k):   
+    filtsignal=signalIn.copy()
+    
+    for i in range(N):
+       filtsignal[i]=np.mean(noisysignal[np.max((0,i-k)):np.min((N,i+k))])
+    return filtsignal
+
+
+# Create the plot showing the correlations between the filtered signal and the original noiseless signal 
+# as a function of k parameter 
+
+kvals=np.arange(5,41)
+signalCorr=[]
+for ki in kvals:
+    # filter the signal 
+    fsig=meansmooth(noisysignal,ki)
+    
+    # compute the correlation signal and original 
+    signalCorr.append(np.corrcoef(fsig,signal)[0,1])
+   
+    
+plt.plot(kvals,signalCorr,'ks-')
+plt.xlabel("Filter kernel length ")
+plt.ylabel("Correlation value")
+
+#%% Smoothing via Gaussian convolution (for denoising time-series data)
+srate=512
+
+time=np.arange(-2,2+1/srate,1/srate)
+points=len(time)
+
+signal=detrend(time**3+np.sign(time)) # detrend will remove the lineat fit 
+noisysignal=signal+np.random.randn(points)*1.1 # it will give a STD of 1.1 
+
+
+plt.plot(time,noisysignal,time,signal)
+plt.show()
+#%%Create the Gaussian 
+
+k=15
+x=np.arange(-k,k+1)/srate
+sigma=.005
+
+gkern=np.exp(-x**2/(2*sigma**2))
+plt.plot(x,gkern,'s-')
+plt.title('n=%s,s=%g'%(2*k+1,sigma)) 
+
+gkern/=sum(gkern)  # we unit normalize 
+filtsignal=np.convolve(noisysignal, gkern,mode='same')
+plt.plot(time,noisysignal,time,filtsignal,time,signal)
+plt.legend(['noisy signal','filt signal','original signal'])
+plt.xlim(time[[0,-1]])
+plt.show()
+
+#%% Define our parameter ranges 
+krange=np.arange(3,333,20)
+srange=np.linspace(.001,.5,60)
+# initialize some output variables 
+sseMatrix=np.zeros((len(krange),len(srange)))
+allkernels=[[0]*len(srange) for i in range(len(krange))]
+
+
+# double loop over the two parameters 
+for ki in range(len(krange)):
+    for si in range(len(srange)):
+        # create the Gaussian 
+        x=np.arange(-krange[ki],krange[ki]+1)/srate
+        gkern=np.exp(-x**2/(2*srange[si]**2))
+        # filter the signal via convolution 
+        # we unit normalize 
+        filtsignal=np.convolve(noisysignal, gkern/sum(gkern),mode='same')
+        # compute the SSE 
+        sseMatrix[ki,si]=np.sum((filtsignal-signal)**2)
+        allkernels[ki][si]=gkern
+# plotting 
+plt.imshow(sseMatrix,vmax=400,extent=[srange[0],srange[-1],krange[0],krange[-1]]) 
+plt.colorbar()
+plt.gca().set_aspect(1/plt.gca().get_data_ratio())
+plt.show()
+plt.plot(allkernels[4][2])
+
+
+#%% Plot a few non randomly selected Gaussian kernels
+
+
+fix,ax=plt.subplots(4,4,figsize=(12,9))
+# 4 equally spaced points on the grid 
+
+sidx=np.linspace(0,len(srange)-1,4).astype(int)
+kidx=np.linspace(0,len(krange)-1,4).astype(int)
+
+for si in range(4):
+    for kj in range(4):
+        ax[kj,si].plot(allkernels[kidx[kj]][sidx[si]])
+        ax[kj,si].set_xticks([])
+        ax[kj,si].set_ylim([0,1.1])
+        ax[kj,si].set_title('k=%g,$\sigma$=%.2f'%(krange[kidx[kj]],srange[sidx[si]]))
+        ax[kj,si].set_aspect(1/ax[kj,si].get_data_ratio())
+        
+plt.show()
+
+
+#%% Despeckling via median filter 
+
+points=12345
+signal=np.mod(np.linspace(0,5,points)**2,5)
+
+
+p=int(.1*points)
+spiketimes=np.random.randint(0,points,p)
+signal[spiketimes]=np.random.rand(p)*100
+
+
+
+
+plt.plot(signal)
+plt.show()
+
+#%% try to mean-smooth the signal 
+k=70
+for i in range(points):
+    signal[i]=np.mean(signal[np.max((0,i-k)):np.min((points,i+k))])
+    
+plt.plot(signal);
+                
+#%% empirically defien a threshold for spikes 
+
+plt.hist(signal,80)
+plt.show()
+threshold=   60
+# find all supra-threshold data indices 
+suprathresholdidx=np.where(signal>threshold)[0]
+
+
+plt.plot(signal)
+plt.plot(suprathresholdidx,signal[suprathresholdidx],'ro')
+
+
+#%% 
+k =35
+for i in suprathresholdidx:
+    lowerbounds=np.max((0,i-k))
+    upperbounds=np.min((points,i+k))
+    
+    
+    signal[i]=np.mean(signal[lowerbounds:upperbounds])
+    
+plt.plot(signal)
+plt.show()  # we have recovered the signal here 
+
+
+
+#%% denoisin biomedical data 
+
+import pandas as pd 
+import chardet 
+import openpyxl
+# with open('EKG_signals.csv', 'rb') as file:  finds the enconding of the file 
+#     print(chardet.detect(file.read()))
+
+%cd D:\Readings\Python\Spyder\MikeCohen\MasterPython_CodeAndData\denoisingSignals
+DF=pd.read_excel('EKG_signals.csv.xlsx',header=None,names=['noisy','original'])#,encoding='utf-16')
+
+DF.plot(fontsize=10)
+
+# a lot of this signal is positive and negative around the origin of the signal 
+# when the noise is normaly distributed (positively and negatively) then a mean or gaussian smoothing filter is appropriate 
+# the mean filter will be good to remove the "downward" spikes from the data (which can be seen in the plot )
+
+DF['filtered']=DF['noisy'].copy()
+
+
+#%% median filter for the small values 
+
+threshold =345
+
+# find the subthreshold data indices 
+
+subthreshidx=np.where(DF['filtered']<threshold)[0]
+
+# apply the median filter 
+
+k=9
+for i in subthreshidx:
+    DF['filtered'][i]=np.median(DF['filtered'][np.max((0,i-k)):np.min((len(DF),i+k))])
+    
+DF[['filtered','original']].plot()    
+
+#%%
+# apply the mean filter 
+
+k=9
+for i in range(len(DF)):
+    DF['filtered'][i]=np.mean(DF['filtered'][np.max((0,i-k)):np.min((len(DF),i+k))])
+   
+DF[['filtered','original']].plot()   
+
+#%% Bonus video 
+# Patches highlight plot area 
+
+# creating a brownian time series 
+
+x=np.cumsum(np.random.randn(5000))
+
+fig,ax=plt.subplots(1)
+ax.plot(x)
+
+
+ylim=ax.get_ylim()
+ax.fill_between([100,800],ylim[0],ylim[1],facecolor='m',alpha=.3)  
+ax.fill_between([801,1800],ylim[0],ylim[1],facecolor='b',alpha=.3)  
+ax.set_ylim(ylim)
+
+
+#%% add another time series 
+
+
+x1=np.cumsum(np.random.randn(5000))
+x2=np.cumsum(np.random.randn(5000))
+
+fig,ax=plt.subplots(1)
+ax.plot(x1)
+ax.plot(x2)
+
+
+#ylim=ax.get_ylim()
+xlim=np.arange(600,1900)
+
+#ax.fill_between([100,800],ylim[0],ylim[1],facecolor='m',alpha=.3)  
+ax.fill_between(xlim,x1[xlim],x2[xlim],facecolor='k',alpha=.3)  
+# ax.set_ylim(ylim) 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

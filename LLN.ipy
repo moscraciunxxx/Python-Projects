@@ -1,0 +1,283 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Mar 14 08:29:11 2022
+
+@author: moscr
+"""
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+# simulation parameters go here 
+
+population_size=2.5e5
+sample_size=50
+number_of_samples=500 
+
+
+#%%
+f=np.linspace(0.001,5,25)
+plt.plot(1/f)
+plt.show()
+
+
+
+
+population= 1/np.logspace(np.log10(0.001),np.log10(5),int(population_size))
+trueMean=np.mean(population)
+
+
+skip=int(1e3)
+
+plt.plot(population[::skip],'o')
+plt.xlabel('Sample')
+plt.ylabel('Data value')
+plt.show()
+
+#%% shuffle the data
+
+np.random.shuffle(population)
+plt.plot(population[::skip],'o')
+plt.xlabel('Sample')
+plt.ylabel('Data value')
+plt.show()
+
+#%% Monte Carlo simulation 
+
+print(np.random.choice(np.array([1,2,3,4,5,6,7,8]),size=3))
+
+
+sample_mean=np.zeros(number_of_samples)
+
+for expi in range(number_of_samples):
+    sample_mean[expi]=np.mean(np.random.choice(population,size=sample_size))
+    
+    
+print(np.mean(np.random.choice(population,size=sample_size)))
+
+plt.plot(sample_mean,'ko',markerfacecolor='w',label='Sample means')
+plt.plot([0,number_of_samples],[trueMean,trueMean],'r',linewidth=5,label='True mean')
+plt.legend()
+plt.xlabel('Sample number')
+plt.ylabel('Mean value')
+plt.show()
+
+#%% Cumulative average 
+
+
+cumave=np.zeros(number_of_samples)
+for i in range(number_of_samples):
+    cumave[i]=np.mean(sample_mean[:i+1])
+    
+    
+cumave2=np.cumsum(sample_mean)/np.arange(1,number_of_samples+1)
+
+cumave-cumave2
+plt.plot(cumave,'ko',label='Cumulative average')
+plt.plot(cumave2,'b+',label='Cumulative average, alt.')
+
+plt.plot([0,number_of_samples],[trueMean,trueMean],'r',linewidth=5,label='True mean')
+plt.legend()
+plt.xlabel('Sample number')
+plt.ylabel('Mean value')
+
+plt.show()
+
+#%% 
+number_of_meta_samples=150
+cumaves=np.zeros((number_of_meta_samples,number_of_samples))
+allsamplemeans=np.zeros((number_of_meta_samples,number_of_samples))
+
+
+for metai in range(number_of_meta_samples):
+    for expi in range(number_of_samples):
+        sample_mean[expi]=np.mean(np.random.choice(population,size=sample_size))
+                
+        cumaves[metai,:]=np.cumsum(sample_mean)/np.arange(1,number_of_samples+1)
+    # now get the cumulative average 
+    
+    
+    
+# now get the cumulative average divergences 
+    
+    tmp=np.cumsum(sample_mean)/np.arange(1,number_of_samples+1)
+    cumaves[metai,:]=(tmp-trueMean)**2
+    # store the sample means 
+    allsamplemeans[metai,:]=sample_mean
+
+plt.plot(cumaves.T)
+plt.ylim([0,800])
+plt.show()
+          
+
+
+#%% THE Central Limit Theorem
+
+# The CLT tells us that the distribution of sample means is going to be roughly gaussian
+# distributed
+
+
+plt.hist(sample_mean,bins=40)
+
+plt.hist(sample_mean,bins='fd') # Freedman-Diaconis algorithm 
+plt.xlabel('Sample mean')
+plt.ylabel('Count')
+
+plt.show()
+
+#%% 
+nbins=40
+for i in range(number_of_meta_samples):
+    y,x=np.histogram(allsamplemeans[i,:],bins=nbins)
+    x=(x[1:]+x[:-1])/2  
+    plt.plot(x,y,color=[.40,.3,.80])
+
+plt.show()    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
