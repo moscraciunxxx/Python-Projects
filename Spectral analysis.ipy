@@ -60,7 +60,7 @@ plt.ylabel('Amplitude (a.u.)')
 plt.show()
 
 #%% Zero-padding the FFT 
-# is smooths the signal representation in the frequency domain  ( the power spectrum looks similar but smooth out)
+# is smooths the signal representation in the frequency domain  ( the power spectrum looks similar but smoothed out)
 
 
 

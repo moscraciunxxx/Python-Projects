@@ -167,7 +167,7 @@ for i in range(points):
     
 plt.plot(signal);
                 
-#%% empirically defien a threshold for spikes 
+#%% empirically define a threshold for spikes 
 
 plt.hist(signal,80)
 plt.show()
@@ -194,7 +194,7 @@ plt.show()  # we have recovered the signal here
 
 
 
-#%% denoisin biomedical data 
+#%% denoising biomedical data 
 
 import pandas as pd 
 import chardet 
